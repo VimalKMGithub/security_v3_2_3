@@ -44,6 +44,7 @@ public class MailService {
                     SELF_MFA_ENABLE_DISABLE_CONFIRMATION_TEMPLATE,
                     value
             );
+            case NEW_SIGN_IN_CONFIRMATION -> NEW_SIGN_IN_CONFIRMATION_TEMPLATE;
         };
         sendEmail(
                 to,

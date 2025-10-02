@@ -57,6 +57,61 @@ public class RedisService {
         redisTemplate.delete(keys);
     }
 
+    public Boolean addZSetMember(String key,
+                                 String member,
+                                 double score,
+                                 Duration timeToLive) {
+        Boolean isAdded = redisTemplate.opsForZSet()
+                .add(
+                        key,
+                        member,
+                        score
+                );
+        redisTemplate.expire(
+                key,
+                timeToLive
+        );
+        return isAdded;
+    }
+
+    public void updateZSetMemberScore(String key,
+                                      String member,
+                                      double score) {
+        redisTemplate.opsForZSet()
+                .add(
+                        key,
+                        member,
+                        score
+                );
+    }
+
+    public Set<String> getAllZSetMembers(String key) {
+        return redisTemplate.opsForZSet()
+                .range(
+                        key,
+                        0,
+                        -1
+                );
+    }
+
+    public void removeZSetMember(String key,
+                                 String member) {
+        redisTemplate.opsForZSet()
+                .remove(
+                        key,
+                        member
+                );
+    }
+
+    public Double getZSetMemberScore(String key,
+                                     String member) {
+        return redisTemplate.opsForZSet()
+                .score(
+                        key,
+                        member
+                );
+    }
+
     public void flushDb() {
         Objects.requireNonNull(redisTemplate.getConnectionFactory())
                 .getConnection()

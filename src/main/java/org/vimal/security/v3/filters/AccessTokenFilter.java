@@ -32,7 +32,10 @@ public class AccessTokenFilter extends OncePerRequestFilter {
             if (authorization != null &&
                     authorization.startsWith("Bearer ") &&
                     getContext().getAuthentication() == null) {
-                UserDetailsImpl userDetails = accessTokenUtility.verifyAccessToken(authorization.substring(7));
+                UserDetailsImpl userDetails = accessTokenUtility.verifyAccessToken(
+                        authorization.substring(7),
+                        request
+                );
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,

@@ -36,4 +36,8 @@ public final class MailTemplateUtility {
             %s.
             If this was not done by you, please contact support immediately.
             """;
+    public static final String NEW_SIGN_IN_CONFIRMATION_TEMPLATE = """
+            New sign in to your account detected.
+            If this was not done by you, please contact support immediately.
+            """;
 }

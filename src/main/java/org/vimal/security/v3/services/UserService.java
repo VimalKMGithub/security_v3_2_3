@@ -115,7 +115,7 @@ public class UserService {
             return genericAesRandomEncryptorDecryptor.decrypt(existingEncryptedEmailVerificationToken);
         }
         String emailVerificationToken = UUID.randomUUID().toString();
-        String encryptedEmailVerificationTokenMappingKey = genericAesStaticEncryptorDecryptor.encrypt(EMAIL_VERIFICATION_TOKEN_MAPPING_PREFIX + emailVerificationToken);
+        String encryptedEmailVerificationTokenMappingKey = getEncryptedEmailVerificationTokenMappingKey(emailVerificationToken);
         try {
             redisService.save(
                     encryptedEmailVerificationTokenKey,

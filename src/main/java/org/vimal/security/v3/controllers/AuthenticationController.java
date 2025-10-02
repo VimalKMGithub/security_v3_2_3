@@ -1,5 +1,6 @@
 package org.vimal.security.v3.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,27 +19,38 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestParam String usernameOrEmail,
-                                                     @RequestParam String password) throws Exception {
+                                                     @RequestParam String password,
+                                                     HttpServletRequest request) throws Exception {
         return ResponseEntity.ok(authenticationService.login(
                         usernameOrEmail,
-                        password
+                        password,
+                        request
                 )
         );
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout() throws Exception {
-        return ResponseEntity.ok(authenticationService.logout());
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) throws Exception {
+        return ResponseEntity.ok(authenticationService.logout(request));
+    }
+
+    @PostMapping("/logout/allDevices")
+    public ResponseEntity<Map<String, String>> logoutAllDevices() throws Exception {
+        return ResponseEntity.ok(authenticationService.logoutAllDevices());
     }
 
     @PostMapping("/refresh/accessToken")
-    public ResponseEntity<Map<String, Object>> refreshAccessToken(@RequestParam String refreshToken) throws Exception {
-        return ResponseEntity.ok(authenticationService.refreshAccessToken(refreshToken));
+    public ResponseEntity<Map<String, Object>> refreshAccessToken(@RequestParam String refreshToken,
+                                                                  HttpServletRequest request) throws Exception {
+        return ResponseEntity.ok(authenticationService.refreshAccessToken(
+                refreshToken,
+                request
+        ));
     }
 
     @PostMapping("/revoke/accessToken")
-    public ResponseEntity<Map<String, String>> revokeAccessToken() throws Exception {
-        return ResponseEntity.ok(authenticationService.revokeAccessToken());
+    public ResponseEntity<Map<String, String>> revokeAccessToken(HttpServletRequest request) throws Exception {
+        return ResponseEntity.ok(authenticationService.revokeAccessToken(request));
     }
 
     @PostMapping("/revoke/refreshToken")
@@ -80,11 +92,13 @@ public class AuthenticationController {
     @PostMapping("/mfa/verifyTo/login")
     public ResponseEntity<Map<String, Object>> verifyMfaToLogin(@RequestParam String type,
                                                                 @RequestParam String stateToken,
-                                                                @RequestParam String otpTotp) throws Exception {
+                                                                @RequestParam String otpTotp,
+                                                                HttpServletRequest request) throws Exception {
         return ResponseEntity.ok(authenticationService.verifyMfaToLogin(
                         type,
                         stateToken,
-                        otpTotp
+                        otpTotp,
+                        request
                 )
         );
     }

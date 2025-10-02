@@ -22,7 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.vimal.security.v3.filters.AccessTokenFilter;
-import org.vimal.security.v3.filters.ServerUpFilter;
+import org.vimal.security.v3.filters.ServerDownFilter;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class SecurityConfig {
             API_VERSION + USER + "/reset/password"
     };
     private final AccessTokenFilter accessTokenFilter;
-    private final ServerUpFilter serverUpFilter;
+    private final ServerDownFilter serverDownFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -85,7 +85,7 @@ public class SecurityConfig {
                         )
                 )
                 .addFilterBefore(
-                        serverUpFilter,
+                        serverDownFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .addFilterBefore(

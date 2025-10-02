@@ -1,6 +1,7 @@
 package org.vimal.security.v3.services;
 
 import io.getunleash.Unleash;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -58,7 +59,8 @@ public class AuthenticationService {
     private final GenericAesRandomEncryptorDecryptor genericAesRandomEncryptorDecryptor;
 
     public Map<String, Object> login(String usernameOrEmail,
-                                     String password) throws Exception {
+                                     String password,
+                                     HttpServletRequest request) throws Exception {
         try {
             validateStringIsNonNullAndNotBlank(
                     usernameOrEmail,
@@ -86,19 +88,24 @@ public class AuthenticationService {
         }
         return proceedLogin(
                 user,
-                password
+                password,
+                request
         );
     }
 
     private Map<String, Object> proceedLogin(UserModel user,
-                                             String password) throws Exception {
+                                             String password,
+                                             HttpServletRequest request) throws Exception {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                             user.getUsername(),
                             password
                     )
             );
-            return handleSuccessfulLogin(user);
+            return handleSuccessfulLogin(
+                    user,
+                    request
+            );
         } catch (BadCredentialsException ex) {
             if (ex.getCause() instanceof UsernameNotFoundException) {
                 throw ex;
@@ -108,7 +115,8 @@ public class AuthenticationService {
         }
     }
 
-    private Map<String, Object> handleSuccessfulLogin(UserModel user) throws Exception {
+    private Map<String, Object> handleSuccessfulLogin(UserModel user,
+                                                      HttpServletRequest request) throws Exception {
         if (unleash.isEnabled(MFA.name())) {
             if (unleashUtility.shouldDoMfa(user)) {
                 return Map.of(
@@ -125,7 +133,10 @@ public class AuthenticationService {
                 );
             }
         }
-        return accessTokenUtility.generateTokens(user);
+        return accessTokenUtility.generateTokens(
+                user,
+                request
+        );
     }
 
     private String generateStateToken(UserModel user) throws Exception {
@@ -173,12 +184,21 @@ public class AuthenticationService {
         userRepo.save(user);
     }
 
-    public Map<String, String> logout() throws Exception {
-        accessTokenUtility.revokeTokens(Set.of(getCurrentAuthenticatedUser()));
+    public Map<String, String> logout(HttpServletRequest request) throws Exception {
+        accessTokenUtility.logout(
+                getCurrentAuthenticatedUser(),
+                request
+        );
         return Map.of("message", "Logout successful");
     }
 
-    public Map<String, Object> refreshAccessToken(String refreshToken) throws Exception {
+    public Map<String, String> logoutAllDevices() throws Exception {
+        accessTokenUtility.revokeTokens(Set.of(getCurrentAuthenticatedUser()));
+        return Map.of("message", "Logout from all devices successful");
+    }
+
+    public Map<String, Object> refreshAccessToken(String refreshToken,
+                                                  HttpServletRequest request) throws Exception {
         try {
             validateUuid(
                     refreshToken,
@@ -187,11 +207,17 @@ public class AuthenticationService {
         } catch (SimpleBadRequestException ex) {
             throw new SimpleBadRequestException("Invalid refresh token");
         }
-        return accessTokenUtility.refreshAccessToken(refreshToken);
+        return accessTokenUtility.refreshAccessToken(
+                refreshToken,
+                request
+        );
     }
 
-    public Map<String, String> revokeAccessToken() throws Exception {
-        accessTokenUtility.revokeAccessToken(getCurrentAuthenticatedUser());
+    public Map<String, String> revokeAccessToken(HttpServletRequest request) throws Exception {
+        accessTokenUtility.revokeAccessToken(
+                getCurrentAuthenticatedUser(),
+                request
+        );
         return Map.of("message", "Access token revoked successfully");
     }
 
@@ -584,7 +610,8 @@ public class AuthenticationService {
 
     public Map<String, Object> verifyMfaToLogin(String type,
                                                 String stateToken,
-                                                String otpTotp) throws Exception {
+                                                String otpTotp,
+                                                HttpServletRequest request) throws Exception {
         validateTypeExistence(type);
         unleashUtility.isMfaEnabledGlobally();
         try {
@@ -611,7 +638,8 @@ public class AuthenticationService {
                     return verifyEmailOtpToLogin(
                             user,
                             otpTotp,
-                            encryptedStateTokenMappingKey
+                            encryptedStateTokenMappingKey,
+                            request
                     );
                 } else if (user.hasMfaMethod(EMAIL_MFA)) {
                     if (!unleash.isEnabled(MFA_EMAIL.name())) {
@@ -620,7 +648,8 @@ public class AuthenticationService {
                     return verifyEmailOtpToLogin(
                             user,
                             otpTotp,
-                            encryptedStateTokenMappingKey
+                            encryptedStateTokenMappingKey,
+                            request
                     );
                 } else {
                     throw new SimpleBadRequestException("Email Mfa is not enabled");
@@ -636,7 +665,8 @@ public class AuthenticationService {
                 return verifyAuthenticatorAppTotpToLogin(
                         user,
                         otpTotp,
-                        encryptedStateTokenMappingKey
+                        encryptedStateTokenMappingKey,
+                        request
                 );
             }
         }
@@ -645,7 +675,8 @@ public class AuthenticationService {
 
     private Map<String, Object> verifyEmailOtpToLogin(UserModel user,
                                                       String otp,
-                                                      String encryptedStateTokenMappingKey) throws Exception {
+                                                      String encryptedStateTokenMappingKey,
+                                                      HttpServletRequest request) throws Exception {
         checkLockedStatus(user);
         String encryptedEmailMfaOtpKey = getEncryptedEmailMfaOtpKey(user);
         String encryptedOtp = redisService.get(encryptedEmailMfaOtpKey);
@@ -662,7 +693,10 @@ public class AuthenticationService {
                     );
                 } catch (Exception ignored) {
                 }
-                return accessTokenUtility.generateTokens(user);
+                return accessTokenUtility.generateTokens(
+                        user,
+                        request
+                );
             }
             handleFailedMfaLoginAttempt(user);
             throw new SimpleBadRequestException("Invalid Otp");
@@ -691,7 +725,8 @@ public class AuthenticationService {
 
     private Map<String, Object> verifyAuthenticatorAppTotpToLogin(UserModel user,
                                                                   String totp,
-                                                                  String encryptedStateTokenMappingKey) throws Exception {
+                                                                  String encryptedStateTokenMappingKey,
+                                                                  HttpServletRequest request) throws Exception {
         checkLockedStatus(user);
         if (verifyTotp(
                 genericAesRandomEncryptorDecryptor.decrypt(user.getAuthAppSecret()),
@@ -705,7 +740,10 @@ public class AuthenticationService {
                 );
             } catch (Exception ignored) {
             }
-            return accessTokenUtility.generateTokens(user);
+            return accessTokenUtility.generateTokens(
+                    user,
+                    request
+            );
         }
         handleFailedMfaLoginAttempt(user);
         throw new SimpleBadRequestException("Invalid Totp");

@@ -34,17 +34,17 @@ public class AesStaticUtility {
                 .encodeToString(cipher.doFinal(data.getBytes(StandardCharsets.UTF_8)));
     }
 
-//    public String decrypt(String encryptedData) throws Exception {
-//        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-//        cipher.init(
-//                Cipher.DECRYPT_MODE,
-//                secretKey,
-//                FIXED_IV_SPEC
-//        );
-//        return new String(
-//                cipher.doFinal(Base64.getDecoder()
-//                        .decode(encryptedData)),
-//                StandardCharsets.UTF_8
-//        );
-//    }
+    public String decrypt(String encryptedData) throws Exception {
+        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+        cipher.init(
+                Cipher.DECRYPT_MODE,
+                secretKey,
+                FIXED_IV_SPEC
+        );
+        return new String(
+                cipher.doFinal(Base64.getDecoder()
+                        .decode(encryptedData)),
+                StandardCharsets.UTF_8
+        );
+    }
 }
